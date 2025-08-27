@@ -4,8 +4,6 @@ services:
   traefik:
     restart: always
     image: traefik:v3.5.0
-    networks:
-      - web
     ports:
       - "80:80"
       - "443:443"
