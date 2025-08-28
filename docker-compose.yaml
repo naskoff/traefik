@@ -1,6 +1,5 @@
 services:
   traefik:
-    restart: always
     image: traefik:v3.5.0
     ports:
       - "80:80"
@@ -9,48 +8,29 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - acme-data:/letsencrypt
     command:
-      # ── Основни ─────────────────────────────────────────────
       - --log.level=INFO
       - --api.dashboard=true
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
-
-      # ── EntryPoints ────────────────────────────────────────
       - --entrypoints.web.address=:80
       - --entrypoints.web.http.redirections.entryPoint.to=websecure
       - --entrypoints.web.http.redirections.entryPoint.scheme=https
       - --entrypoints.websecure.address=:443
-
-      # ── ACME / Let's Encrypt (TLS-ALPN challenge) ─────────
       - --certificatesresolvers.letsencrypt.acme.email=$ACME_EMAIL
       - --certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json
       - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
 
     labels:
-      # Включваме Traefik за този контейнер
       - traefik.enable=true
-
-      # ── Router за Traefik Dashboard през поддомейн ─────────
       - traefik.http.routers.traefik.rule=Host(`traefik-admin.${DOMAIN}`)
       - traefik.http.routers.traefik.entrypoints=websecure
       - traefik.http.routers.traefik.tls=true
       - traefik.http.routers.traefik.tls.certresolver=letsencrypt
-
-      # Маршрутираме към вътрешния API на Traefik (дашборд)
       - traefik.http.routers.traefik.service=api@internal
-
-      # BasicAuth middleware
       - traefik.http.routers.traefik.middlewares=traefik-dashboard-auth
-      # ЗАМЕНИ хеша долу с твой (bcrypt). Формат: user:hashedpass
-      - traefik.http.middlewares.traefik-dashboard-auth.basicauth.users=admin:$$2y$$05$$Kc9c7m2Q7o3xj9vI2GkZwe8r4p8m0e8h3i2u0Q2K4q0mX2yqNwE7C
-
-      # (По желание) сигурни заглавки
-      - traefik.http.middlewares.secure-headers.headers.stsSeconds=31536000
-      - traefik.http.middlewares.secure-headers.headers.stsIncludeSubdomains=true
-      - traefik.http.middlewares.secure-headers.headers.stsPreload=true
-      - traefik.http.routers.traefik.middlewares=traefik-dashboard-auth,secure-headers
+      - traefik.http.middlewares.traefik-dashboard-auth.basicauth.users=
+      - traefik.http.routers.traefik.middlewares=traefik-dashboard-auth
   whoami:
-    restart: always
     image: traefik/whoami
     labels:
       - traefik.enable=true
